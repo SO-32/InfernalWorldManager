@@ -1,0 +1,31 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Turner <samt@thoriumcube.org>
+Date: Mon, 9 Oct 2023 15:23:16 +0100
+Subject: [PATCH] Add CommonLoadTask
+
+
+diff --git a/src/main/java/com/infernalsuite/iwm/level/CommonLoadTask.java b/src/main/java/com/infernalsuite/iwm/level/CommonLoadTask.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..085e6e9f5c036bfcecce0a68675eed055b5c5d63
+--- /dev/null
++++ b/src/main/java/com/infernalsuite/iwm/level/CommonLoadTask.java
+@@ -0,0 +1,19 @@
++package com.infernalsuite.iwm.level;
++
++import ca.spottedleaf.concurrentutil.executor.standard.PrioritisedExecutor;
++
++public interface CommonLoadTask {
++
++    boolean schedule(boolean schedule);
++
++    PrioritisedExecutor.Priority getPriority();
++
++    boolean cancel();
++
++    void lowerPriority(PrioritisedExecutor.Priority priority);
++
++    void raisePriority(PrioritisedExecutor.Priority priority);
++
++    void setPriority(PrioritisedExecutor.Priority priority);
++
++}
