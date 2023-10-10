@@ -1,7 +1,7 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Sam Turner <samt@thoriumcube.org>
 Date: Mon, 9 Oct 2023 13:59:23 +0100
-Subject: [PATCH] Add InfernalLevel
+Subject: [PATCH] Add internal implementation for worlds
 
 
 diff --git a/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java b/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java
@@ -67,4 +67,95 @@ index 0000000000000000000000000000000000000000..74a522cfb596ef5e8fa253285efb9273
 +
 +    }
 +
++}
+diff --git a/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java b/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..a767169c50a081c0bee540246a9436ca5533b3b5
+--- /dev/null
++++ b/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java
+@@ -0,0 +1,85 @@
++package com.infernalsuite.iwm.level;
++
++import com.infernalsuite.iwm.api.loaders.IWMLoader;
++import com.infernalsuite.iwm.api.world.InfernalChunk;
++import com.infernalsuite.iwm.api.world.InfernalWorld;
++import com.infernalsuite.iwm.api.world.properties.WorldPropertyMap;
++import net.minecraft.world.level.chunk.LevelChunk;
++import org.checkerframework.checker.nullness.qual.NonNull;
++import org.jglrxavpok.hephaistos.nbt.NBTCompound;
++import org.jglrxavpok.hephaistos.nbt.mutable.MutableNBTCompound;
++
++import java.util.Collection;
++import java.util.List;
++import java.util.Map;
++
++public class NMSInfernalWorld implements InfernalWorld {
++
++    private final InfernalLevel infernalLevel;
++
++    private final MutableNBTCompound extraNbt;
++    private final WorldPropertyMap propertyMap;
++    private final IWMLoader loader;
++    private final String formatName;
++    private final Map<Long, InfernalChunk> chunkStorage;
++    private boolean readOnly;
++
++    public NMSInfernalWorld(InfernalBootstrap bootstrap, InfernalLevel infernalLevel) {
++        this.infernalLevel = infernalLevel;
++
++        this.extraNbt = bootstrap.initial().getExtraData();
++        this.propertyMap = bootstrap.initial().getWorldPropertyMap();
++        this.loader = bootstrap.initial().getLoader();
++        this.formatName = bootstrap.initial().getFormatName();
++        this.chunkStorage = bootstrap.initial().getChunks();
++        this.readOnly = bootstrap.initial().isReadOnly();
++    }
++
++    @Override
++    public @NonNull String getName() {
++        return this.infernalLevel.serverLevelData.getLevelName();
++    }
++
++    @Override
++    public @NonNull IWMLoader getLoader() {
++        return this.loader;
++    }
++
++    @Override
++    public @NonNull InfernalChunk getChunk(int cx, int cz) {
++        LevelChunk chunk = this.infernalLevel.getChunkIfLoaded(cx, cz);
++        if (chunk == null) return null;
++        return new NMSInfernalChunk(chunk);
++    }
++
++    @Override
++    public Map<Long, InfernalChunk> getChunks() {
++        // TODO
++        return null;
++    }
++
++    @Override
++    public Collection<NBTCompound> getWorldMaps() {
++        return List.of(); // TODO - Should this return something actually useful??
++    }
++
++    @Override
++    public @NonNull WorldPropertyMap getWorldPropertyMap() {
++        return this.propertyMap;
++    }
++
++    @Override
++    public boolean isReadOnly() {
++        return this.loader == null || this.readOnly;
++    }
++
++    @Override
++    public MutableNBTCompound getExtraData() {
++        return this.extraNbt;
++    }
++
++    @Override
++    public @NonNull String getFormatName() {
++        return this.formatName;
++    }
 +}
