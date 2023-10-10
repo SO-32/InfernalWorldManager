@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Turner <samt@thoriumcube.org>
+Date: Tue, 10 Oct 2023 13:06:40 +0100
+Subject: [PATCH] Add FastChunkPruner
+
+
+diff --git a/src/main/java/com/infernalsuite/iwm/level/FastChunkPruner.java b/src/main/java/com/infernalsuite/iwm/level/FastChunkPruner.java
+new file mode 100644
+index 0000000000000000000000000000000000000000..9fcb44b61d071649e31110d4dc3da93ca1791549
+--- /dev/null
++++ b/src/main/java/com/infernalsuite/iwm/level/FastChunkPruner.java
+@@ -0,0 +1,59 @@
++package com.infernalsuite.iwm.level;
++
++import com.infernalsuite.iwm.api.world.InfernalWorld;
++import com.infernalsuite.iwm.api.world.properties.WorldProperties;
++import com.infernalsuite.iwm.api.world.properties.WorldPropertyMap;
++import io.papermc.paper.world.ChunkEntitySlices;
++import net.minecraft.world.level.chunk.LevelChunk;
++import net.minecraft.world.level.chunk.LevelChunkSection;
++
++public class FastChunkPruner {
++
++    public static boolean canBePruned(InfernalWorld world, LevelChunk chunk) {
++        // Kenox <muranelp@gmail.com>
++        // It's not safe to assume that the chunk can be pruned
++        // if there isn't a loaded chunk there
++        if (chunk == null || chunk.getChunkHolder() == null) {
++            return false;
++        }
++
++        WorldPropertyMap propertyMap = world.getWorldPropertyMap();
++        if (propertyMap.getValue(WorldProperties.SHOULD_LIMIT_SAVE)) {
++            int minX = propertyMap.getValue(WorldProperties.SAVE_MIN_X);
++            int maxX = propertyMap.getValue(WorldProperties.SAVE_MAX_X);
++
++            int minZ = propertyMap.getValue(WorldProperties.SAVE_MIN_Z);
++            int maxZ = propertyMap.getValue(WorldProperties.SAVE_MAX_Z);
++
++            int chunkX = chunk.locX;
++            int chunkZ = chunk.locZ;
++
++            if (chunkX < minX || chunkX > maxX) {
++                return true;
++            }
++
++            if (chunkZ < minZ || chunkZ > maxZ) {
++                return true;
++            }
++        }
++
++        String pruningSetting = world.getWorldPropertyMap().getValue(WorldProperties.CHUNK_PRUNING);
++        if (pruningSetting.equals("aggressive")) {
++            ChunkEntitySlices slices = chunk.getChunkHolder().getEntityChunk();
++
++            return chunk.blockEntities.isEmpty() && (slices == null || slices.isEmpty()) && areSectionsEmpty(chunk);
++        }
++
++        return false;
++    }
++
++    private static boolean areSectionsEmpty(LevelChunk chunk) {
++        for (LevelChunkSection section : chunk.getSections()) {
++            if (!section.hasOnlyAir()) {
++                return false;
++            }
++        }
++
++        return true;
++    }
++}
+\ No newline at end of file
