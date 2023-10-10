@@ -3,6 +3,7 @@ package com.infernalsuite.iwm.api.world.properties;
 import com.infernalsuite.iwm.api.world.properties.type.BooleanProperty;
 import com.infernalsuite.iwm.api.world.properties.type.IntProperty;
 import com.infernalsuite.iwm.api.world.properties.type.StringProperty;
+import org.jetbrains.annotations.ApiStatus;
 
 public class WorldProperties {
 
@@ -36,5 +37,28 @@ public class WorldProperties {
     );
 
     public static final WorldProperty<String> DEFAULT_BIOME = new StringProperty("defaultBiome", "minecraft:plains");
+
+    @ApiStatus.Experimental
+    public static final WorldProperty<Boolean> SHOULD_LIMIT_SAVE = new BooleanProperty("hasSaveBounds", false);
+
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> SAVE_MIN_X = new IntProperty("saveMinX", 0);
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> SAVE_MIN_Z = new IntProperty("saveMinZ", 0);
+
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> SAVE_MAX_X = new IntProperty("saveMaxX", 0);
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> SAVE_MAX_Z = new IntProperty("saveMaxZ", 0);
+
+    @ApiStatus.Experimental
+    public static final WorldProperty<String> CHUNK_PRUNING = new StringProperty("pruning", "aggressive", (value) ->
+            value.equalsIgnoreCase("aggressive") || value.equalsIgnoreCase("never")
+    );
+
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> CHUNK_SECTION_MIN = new IntProperty("chunkSectionMin", -4);
+    @ApiStatus.Experimental
+    public static final WorldProperty<Integer> CHUNK_SECTION_MAX = new IntProperty("chunkSectionMin", 19);
 
 }
