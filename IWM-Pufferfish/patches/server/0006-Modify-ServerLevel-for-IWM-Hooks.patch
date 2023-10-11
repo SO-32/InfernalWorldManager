@@ -5,7 +5,7 @@ Subject: [PATCH] Modify ServerLevel for IWM Hooks
 
 
 diff --git a/src/main/java/net/minecraft/server/level/ServerLevel.java b/src/main/java/net/minecraft/server/level/ServerLevel.java
-index 18aac3da3c88f33b1a71a5920a8daa27e9723913..4da32ce64e3c12ac759a6c52ed2001dd9c356d28 100644
+index 18aac3da3c88f33b1a71a5920a8daa27e9723913..071ab198463e7216134a118718edcef11f0b0186 100644
 --- a/src/main/java/net/minecraft/server/level/ServerLevel.java
 +++ b/src/main/java/net/minecraft/server/level/ServerLevel.java
 @@ -1,8 +1,9 @@
@@ -188,7 +188,52 @@ index 18aac3da3c88f33b1a71a5920a8daa27e9723913..4da32ce64e3c12ac759a6c52ed2001dd
      public static Throwable getAddToWorldStackTrace(Entity entity) {
          final Throwable thr = new Throwable(entity + " Added to world at " + new java.util.Date());
          io.papermc.paper.util.StacktraceDeobfuscator.INSTANCE.deobfuscateThrowable(thr);
-@@ -641,8 +593,13 @@ public class ServerLevel extends Level implements WorldGenLevel {
+@@ -362,8 +314,10 @@ public class ServerLevel extends Level implements WorldGenLevel {
+ 
+     // Paper start - rewrite chunk system
+     public final io.papermc.paper.chunk.system.scheduling.ChunkTaskScheduler chunkTaskScheduler;
+-    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController chunkDataControllerNew
+-        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.CHUNK_DATA) {
++
++    // IWM Start - make CDCs non-final
++    public io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController chunkDataControllerNew
++            = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.CHUNK_DATA) {
+ 
+         @Override
+         public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
+@@ -380,8 +334,8 @@ public class ServerLevel extends Level implements WorldGenLevel {
+             return ServerLevel.this.getChunkSource().chunkMap.readSync(new ChunkPos(chunkX, chunkZ));
+         }
+     };
+-    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController poiDataControllerNew
+-        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.POI_DATA) {
++    public io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController poiDataControllerNew
++            = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.POI_DATA) {
+ 
+         @Override
+         public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
+@@ -398,8 +352,8 @@ public class ServerLevel extends Level implements WorldGenLevel {
+             return ServerLevel.this.getChunkSource().chunkMap.getPoiManager().read(new ChunkPos(chunkX, chunkZ));
+         }
+     };
+-    public final io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController entityDataControllerNew
+-        = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.ENTITY_DATA) {
++    public io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController entityDataControllerNew
++            = new io.papermc.paper.chunk.system.io.RegionFileIOThread.ChunkDataController(io.papermc.paper.chunk.system.io.RegionFileIOThread.RegionFileType.ENTITY_DATA) {
+ 
+         @Override
+         public net.minecraft.world.level.chunk.storage.RegionFileStorage getCache() {
+@@ -416,7 +370,8 @@ public class ServerLevel extends Level implements WorldGenLevel {
+             return ServerLevel.this.readEntityChunk(chunkX, chunkZ);
+         }
+     };
+-    private final EntityRegionFileStorage entityStorage;
++    // IWM End
++    public final EntityRegionFileStorage entityStorage; // IWM - private -> public
+ 
+     private static final class EntityRegionFileStorage extends net.minecraft.world.level.chunk.storage.RegionFileStorage {
+ 
+@@ -641,8 +596,13 @@ public class ServerLevel extends Level implements WorldGenLevel {
      }
      // Paper end - optimise get nearest players for entity AI
  
@@ -203,7 +248,7 @@ index 18aac3da3c88f33b1a71a5920a8daa27e9723913..4da32ce64e3c12ac759a6c52ed2001dd
          // IRegistryCustom.Dimension iregistrycustom_dimension = minecraftserver.registryAccess(); // CraftBukkit - decompile error
          // Holder holder = worlddimension.type(); // CraftBukkit - decompile error
  
-@@ -681,6 +638,11 @@ public class ServerLevel extends Level implements WorldGenLevel {
+@@ -681,6 +641,11 @@ public class ServerLevel extends Level implements WorldGenLevel {
              chunkgenerator = new org.bukkit.craftbukkit.generator.CustomChunkGenerator(this, chunkgenerator, gen);
          }
          // CraftBukkit end
@@ -215,7 +260,7 @@ index 18aac3da3c88f33b1a71a5920a8daa27e9723913..4da32ce64e3c12ac759a6c52ed2001dd
          boolean flag2 = minecraftserver.forceSynchronousWrites();
          DataFixer datafixer = minecraftserver.getFixerUpper();
          this.entityStorage = new EntityRegionFileStorage(convertable_conversionsession.getDimensionPath(resourcekey).resolve("entities"), flag2); // Paper - rewrite chunk system  //EntityPersistentStorage<Entity> entitypersistentstorage = new EntityStorage(this, convertable_conversionsession.getDimensionPath(resourcekey).resolve("entities"), datafixer, flag2, minecraftserver);
-@@ -734,6 +696,12 @@ public class ServerLevel extends Level implements WorldGenLevel {
+@@ -734,6 +699,12 @@ public class ServerLevel extends Level implements WorldGenLevel {
          this.entityLookup = new io.papermc.paper.chunk.system.entity.EntityLookup(this, new EntityCallbacks()); // Paper - rewrite chunk system
      }
  
