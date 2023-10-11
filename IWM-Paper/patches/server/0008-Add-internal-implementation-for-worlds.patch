@@ -6,10 +6,10 @@ Subject: [PATCH] Add internal implementation for worlds
 
 diff --git a/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java b/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..c5a9a90fb584973444768238bbce6efad1893fe9
+index 0000000000000000000000000000000000000000..65c00ea7b94b27e8b5e1c2d562e6b394b8428d1d
 --- /dev/null
 +++ b/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java
-@@ -0,0 +1,93 @@
+@@ -0,0 +1,91 @@
 +package com.infernalsuite.iwm.level;
 +
 +import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -42,9 +42,7 @@ index 0000000000000000000000000000000000000000..c5a9a90fb584973444768238bbce6efa
 +import java.util.UUID;
 +import java.util.concurrent.ExecutorService;
 +import java.util.concurrent.Executors;
-+import java.util.concurrent.Future;
 +import java.util.concurrent.locks.ReentrantLock;
-+import java.util.concurrent.locks.ReentrantReadWriteLock;
 +
 +public class InfernalLevel extends ServerLevel {
 +
@@ -68,7 +66,7 @@ index 0000000000000000000000000000000000000000..c5a9a90fb584973444768238bbce6efa
 +
 +    private boolean ready = false;
 +
-+    final NMSInfernalWorld infernalWorld;
++    public final NMSInfernalWorld infernalWorld;
 +
 +    public InfernalLevel(InfernalBootstrap infernalBootstrap, PrimaryLevelData primaryLevelData,
 +                         ResourceKey<Level> worldKey, ResourceKey<LevelStem> dimensionKey, LevelStem worldDimension,
@@ -105,16 +103,18 @@ index 0000000000000000000000000000000000000000..c5a9a90fb584973444768238bbce6efa
 +}
 diff --git a/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java b/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..a767169c50a081c0bee540246a9436ca5533b3b5
+index 0000000000000000000000000000000000000000..ddd9930644323aee00b5e7d26658e42f24766a75
 --- /dev/null
 +++ b/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java
-@@ -0,0 +1,85 @@
+@@ -0,0 +1,117 @@
 +package com.infernalsuite.iwm.level;
 +
 +import com.infernalsuite.iwm.api.loaders.IWMLoader;
 +import com.infernalsuite.iwm.api.world.InfernalChunk;
 +import com.infernalsuite.iwm.api.world.InfernalWorld;
 +import com.infernalsuite.iwm.api.world.properties.WorldPropertyMap;
++import io.papermc.paper.util.CoordinateUtils;
++import net.minecraft.nbt.CompoundTag;
 +import net.minecraft.world.level.chunk.LevelChunk;
 +import org.checkerframework.checker.nullness.qual.NonNull;
 +import org.jglrxavpok.hephaistos.nbt.NBTCompound;
@@ -123,6 +123,7 @@ index 0000000000000000000000000000000000000000..a767169c50a081c0bee540246a9436ca
 +import java.util.Collection;
 +import java.util.List;
 +import java.util.Map;
++import java.util.concurrent.ConcurrentHashMap;
 +
 +public class NMSInfernalWorld implements InfernalWorld {
 +
@@ -134,6 +135,11 @@ index 0000000000000000000000000000000000000000..a767169c50a081c0bee540246a9436ca
 +    private final String formatName;
 +    private final Map<Long, InfernalChunk> chunkStorage;
 +    private boolean readOnly;
++
++    // Concurrent access possible due to Async ChunkIO
++    private final Map<Long, CompoundTag> chunkData = new ConcurrentHashMap<>();
++    private final Map<Long, CompoundTag> poiChunkData = new ConcurrentHashMap<>();
++    private final Map<Long, CompoundTag> entityChunkData = new ConcurrentHashMap<>();
 +
 +    public NMSInfernalWorld(InfernalBootstrap bootstrap, InfernalLevel infernalLevel) {
 +        this.infernalLevel = infernalLevel;
@@ -192,5 +198,29 @@ index 0000000000000000000000000000000000000000..a767169c50a081c0bee540246a9436ca
 +    @Override
 +    public @NonNull String getFormatName() {
 +        return this.formatName;
++    }
++
++    public void saveChunkData(int chunkX, int chunkZ, CompoundTag data) {
++        this.chunkData.put(CoordinateUtils.getChunkKey(chunkX, chunkZ), data);
++    }
++
++    public CompoundTag readChunkData(int chunkX, int chunkZ) {
++        return this.chunkData.get(CoordinateUtils.getChunkKey(chunkX, chunkZ));
++    }
++
++    public void saveEntityChunkData(int chunkX, int chunkZ, CompoundTag data) {
++        this.entityChunkData.put(CoordinateUtils.getChunkKey(chunkX, chunkZ), data);
++    }
++
++    public CompoundTag readEntityChunkData(int chunkX, int chunkZ) {
++        return this.entityChunkData.get(CoordinateUtils.getChunkKey(chunkX, chunkZ));
++    }
++
++    public void savePoiChunkData(int chunkX, int chunkZ, CompoundTag data) {
++        this.poiChunkData.put(CoordinateUtils.getChunkKey(chunkX, chunkZ), data);
++    }
++
++    public CompoundTag readPoiChunkData(int chunkX, int chunkZ) {
++        return this.poiChunkData.get(CoordinateUtils.getChunkKey(chunkX, chunkZ));
 +    }
 +}
