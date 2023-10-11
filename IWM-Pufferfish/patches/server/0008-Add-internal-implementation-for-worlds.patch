@@ -6,24 +6,34 @@ Subject: [PATCH] Add internal implementation for worlds
 
 diff --git a/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java b/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java
 new file mode 100644
-index 0000000000000000000000000000000000000000..74a522cfb596ef5e8fa253285efb9273c89ea40f
+index 0000000000000000000000000000000000000000..a48b785b03777c5ebf001e14f85e587da2507fe5
 --- /dev/null
 +++ b/src/main/java/com/infernalsuite/iwm/level/InfernalLevel.java
-@@ -0,0 +1,58 @@
+@@ -0,0 +1,91 @@
 +package com.infernalsuite.iwm.level;
 +
 +import com.google.common.util.concurrent.ThreadFactoryBuilder;
++import com.infernalsuite.iwm.api.world.properties.WorldProperties;
++import com.infernalsuite.iwm.api.world.properties.WorldPropertyMap;
++import net.minecraft.core.BlockPos;
++import net.minecraft.core.Holder;
++import net.minecraft.core.registries.Registries;
 +import net.minecraft.resources.ResourceKey;
++import net.minecraft.resources.ResourceLocation;
 +import net.minecraft.server.MinecraftServer;
 +import net.minecraft.server.level.ServerLevel;
 +import net.minecraft.util.datafix.DataFixers;
++import net.minecraft.world.Difficulty;
 +import net.minecraft.world.level.Level;
++import net.minecraft.world.level.biome.Biome;
++import net.minecraft.world.level.chunk.ChunkGenerator;
 +import net.minecraft.world.level.dimension.LevelStem;
 +import net.minecraft.world.level.storage.LevelStorageSource;
 +import net.minecraft.world.level.storage.PrimaryLevelData;
 +import net.minecraft.world.level.validation.DirectoryValidator;
 +import org.apache.commons.io.FileUtils;
 +import org.bukkit.World;
++import org.jetbrains.annotations.Nullable;
 +
 +import java.io.IOException;
 +import java.nio.file.Files;
@@ -56,6 +66,8 @@ index 0000000000000000000000000000000000000000..74a522cfb596ef5e8fa253285efb9273
 +
 +    private boolean ready = false;
 +
++    public final NMSInfernalWorld infernalWorld;
++
 +    public InfernalLevel(InfernalBootstrap infernalBootstrap, PrimaryLevelData primaryLevelData,
 +                         ResourceKey<Level> worldKey, ResourceKey<LevelStem> dimensionKey, LevelStem worldDimension,
 +                         World.Environment environment) throws IOException {
@@ -64,9 +76,30 @@ index 0000000000000000000000000000000000000000..74a522cfb596ef5e8fa253285efb9273
 +                primaryLevelData, worldKey, worldDimension, MinecraftServer.getServer().progressListenerFactory.create(11),
 +                false, 0, Collections.emptyList(), true, null, environment, null, null);
 +
++        this.infernalWorld = new NMSInfernalWorld(infernalBootstrap, this);
 +
++        WorldPropertyMap propertyMap = infernalBootstrap.initial().getWorldPropertyMap();
++
++        this.serverLevelData.setDifficulty(Difficulty.valueOf(propertyMap.getValue(WorldProperties.DIFFICULTY).toUpperCase()));
++        this.serverLevelData.setSpawn(new BlockPos(propertyMap.getValue(WorldProperties.SPAWN_X),
++                        propertyMap.getValue(WorldProperties.SPAWN_Y),
++                        propertyMap.getValue(WorldProperties.SPAWN_Z)),
++                0);
++        super.setSpawnSettings(propertyMap.getValue(WorldProperties.ALLOW_MONSTERS), propertyMap.getValue(WorldProperties.ALLOW_ANIMALS));
++
++        this.pvpMode = propertyMap.getValue(WorldProperties.PVP);
++
++        this.keepSpawnInMemory = false;
 +    }
 +
++    @Nullable
++    @Override
++    public ChunkGenerator getGenerator(@Nullable InfernalBootstrap bootstrap) {
++        String biomeStr = bootstrap.initial().getWorldPropertyMap().getValue(WorldProperties.DEFAULT_BIOME);
++        ResourceKey<Biome> biomeKey = ResourceKey.create(Registries.BIOME, new ResourceLocation(biomeStr));
++        Holder<Biome> defaultBiome = MinecraftServer.getServer().registryAccess().registryOrThrow(Registries.BIOME).getHolderOrThrow(biomeKey);
++        return new InfernalLevelGenerator(defaultBiome);
++    }
 +}
 diff --git a/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java b/src/main/java/com/infernalsuite/iwm/level/NMSInfernalWorld.java
 new file mode 100644
