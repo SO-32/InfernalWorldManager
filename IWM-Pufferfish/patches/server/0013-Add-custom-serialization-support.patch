@@ -1,0 +1,43 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Sam Turner <samt@thoriumcube.org>
+Date: Wed, 11 Oct 2023 11:25:36 +0100
+Subject: [PATCH] Add custom serialization support
+
+
+diff --git a/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java b/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
+index 51304c5cf4b0ac7646693ef97ef4a3847d3342b5..03f690cc74cdc81b74f1b29af297c474b620c27f 100644
+--- a/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
++++ b/src/main/java/io/papermc/paper/chunk/system/scheduling/NewChunkHolder.java
+@@ -10,6 +10,10 @@ import com.google.gson.JsonArray;
+ import com.google.gson.JsonElement;
+ import com.google.gson.JsonObject;
+ import com.google.gson.JsonPrimitive;
++import com.infernalsuite.iwm.api.IWMProvider;
++import com.infernalsuite.iwm.api.InfernalWorldManager;
++import com.infernalsuite.iwm.api.formats.FormatRegistry;
++import com.infernalsuite.iwm.level.InfernalLevel;
+ import com.mojang.logging.LogUtils;
+ import io.papermc.paper.chunk.system.io.RegionFileIOThread;
+ import io.papermc.paper.chunk.system.poi.PoiChunk;
+@@ -1881,6 +1885,21 @@ public final class NewChunkHolder {
+                 }
+             }
+ 
++            // IWM Start - Custom Serialization
++            if (this.world instanceof InfernalLevel infernalLevel) {
++                InfernalWorldManager iwmAPI = IWMProvider.get();
++                FormatRegistry formatRegistry = iwmAPI.getFormatRegistry();
++                String formatName = infernalLevel.infernalWorld.getFormatName();
++                formatRegistry.getFormat(formatName).thenAccept(optFormat -> optFormat.ifPresentOrElse(format -> {
++                    // TODO: Rework format and serialization wrappers
++                }, () -> {
++                    String errorMessage = "Format '" + formatName + "' for world '" + infernalLevel.infernalWorld.getName()
++                            + "' was not present in the FormatRegistry!";
++                    throw new IllegalStateException(errorMessage);
++                }));
++            }
++            // IWM End
++
+             final CompoundTag save = ChunkSerializer.saveChunk(this.world, chunk, null);
+ 
+             if (unloading) {
