@@ -1,6 +1,7 @@
 package com.infernalsuite.iwm.api.world;
 
 import org.checkerframework.checker.nullness.qual.NonNull;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import org.jglrxavpok.hephaistos.nbt.NBTCompound;
 
 import java.util.List;
@@ -69,8 +70,15 @@ public interface InfernalChunk {
     /**
      * Gets all entities of the chunk.
      *
-     * @return a list of {@link NBTCompound}s containing all the entities of the cxhunk
+     * @return a list of {@link NBTCompound}s containing all the entities of the chunk
      */
     @NonNull List<NBTCompound> getEntities();
+
+    /**
+     * Gets the POI data of the chunk.
+     *
+     * @return an {@link NBTCompound} containing the chunk's poi data
+     */
+    @Nullable NBTCompound poiData();
 
 }
